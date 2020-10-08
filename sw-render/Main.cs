@@ -1,4 +1,5 @@
 ﻿using SDL2;
+using System.Collections.Generic;
 
 class Program
 {
@@ -20,6 +21,14 @@ class Program
 
         SDL.SDL_Event e;
         bool quit = false;
+
+        List<Point> triangle = new List<Point>()
+        {
+            new Point(0,0),
+            new Point(400,400),
+            new Point(0,400),
+        };
+
         while (!quit)
         {
             while (SDL.SDL_PollEvent(out e) != 0)
@@ -40,6 +49,7 @@ class Program
 
             renderer.Clear();
             renderer.RenderNoise();
+            renderer.RenderTriangle(triangle);
             renderer.Finish();
         }
 
