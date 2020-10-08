@@ -1,4 +1,7 @@
-﻿using SDL2;
+﻿using ObjLoader.Loader.Data.Elements;
+using ObjLoader.Loader.Data.VertexData;
+using ObjLoader.Loader.Loaders;
+using SDL2;
 using System.Collections.Generic;
 
 class Program
@@ -22,12 +25,42 @@ class Program
         SDL.SDL_Event e;
         bool quit = false;
 
-        List<Point> triangle = new List<Point>()
+        List<Point> triangle1 = new List<Point>()
         {
             new Point(0,0),
-            new Point(400,400),
-            new Point(0,400),
+            new Point(100,100),
+            new Point(0,100),
         };
+
+        List<Point> triangle2 = new List<Point>()
+        {
+            new Point(300,300),
+            new Point(200,200),
+            new Point(200,300),
+        };
+
+        List<List<Point>> points = new List<List<Point>>();
+        {
+            var objLoaderFactory = new ObjLoaderFactory();
+            var objLoader = objLoaderFactory.Create();
+            var fileStream = new System.IO.FileStream("../../../head.obj", System.IO.FileMode.Open);
+            LoadResult model = objLoader.Load(fileStream);
+
+            foreach (Group group in model.Groups)
+            {
+                foreach (Face face in group.Faces)
+                {
+                    List<Point> facePoints = new List<Point>();
+                    for (int i = 0; i < face.Count; ++i)
+                    {
+                        Vertex v = model.Vertices[face[i].VertexIndex - 1];
+                        Point p = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
+                        facePoints.Add(p);
+                    }
+                    points.Add(facePoints);
+                }
+            }
+        }
 
         while (!quit)
         {
@@ -49,7 +82,13 @@ class Program
 
             renderer.Clear();
             renderer.RenderNoise();
-            renderer.RenderTriangle(triangle);
+            //renderer.RenderTriangle(triangle1);
+            //renderer.RenderTriangle(triangle2);
+            foreach (var facePoints in points)
+            {
+                renderer.RenderTriangle(facePoints);
+            }
+
             renderer.Finish();
         }
 
