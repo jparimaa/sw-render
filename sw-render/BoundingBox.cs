@@ -20,7 +20,7 @@ class BoundingBox
             Left = System.Math.Min(Left, p.X);
             Top = System.Math.Min(Top, p.Y);
             Right = System.Math.Max(Right, p.X);
-            Bottom = System.Math.Max(Bottom, p.X);
+            Bottom = System.Math.Max(Bottom, p.Y);
         }
         Left = System.Math.Max(Left, min.X);
         Top = System.Math.Max(Top, min.Y);

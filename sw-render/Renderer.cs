@@ -24,13 +24,13 @@ class Renderer
         c_windowPixelFormat = SDL.SDL_GetWindowPixelFormat(c_window);
         c_bytesPerPixel = SDL.SDL_BYTESPERPIXEL(c_windowPixelFormat);
         c_boundingBoxMin = new Point(0, 0);
-        c_boundingBoxMax = new Point(c_width, c_height);
+        c_boundingBoxMax = new Point(c_width - 1, c_height - 1);
     }
 
     public void Clear()
     {
         SDL.SDL_Rect rect = new SDL.SDL_Rect() { x = 0, y = 0, w = c_width, h = c_height };
-        SDL.SDL_FillRect(c_surfacePtr, ref rect, SDL.SDL_MapRGB(c_surface.format, 0, 0, 0));
+        SDL.SDL_FillRect(c_surfacePtr, ref rect, SDL.SDL_MapRGB(c_surface.format, 0, 0, 64));
     }
 
     public void RenderNoise(int amount = 10000)
