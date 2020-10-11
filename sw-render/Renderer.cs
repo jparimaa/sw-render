@@ -14,6 +14,8 @@ class Renderer
     private readonly Point c_boundingBoxMin;
     private readonly Point c_boundingBoxMax;
 
+    private List<List<float>> m_depthBuffer;
+
     public Renderer(System.IntPtr window, int width, int height)
     {
         c_window = window;
@@ -25,6 +27,18 @@ class Renderer
         c_bytesPerPixel = SDL.SDL_BYTESPERPIXEL(c_windowPixelFormat);
         c_boundingBoxMin = new Point(0, 0);
         c_boundingBoxMax = new Point(c_width - 1, c_height - 1);
+
+        var defaults = new float[width];
+        for (int i = 0; i < defaults.Length; ++i)
+        {
+            defaults[i] = -1.0f;
+        }
+
+        m_depthBuffer = new List<List<float>>(height);
+        for (int i = 0; i < height; ++i)
+        {
+            m_depthBuffer.Add(new List<float>(defaults));
+        }
     }
 
     public void Clear()
@@ -51,28 +65,37 @@ class Renderer
         }
     }
 
-    public void RenderTriangle(List<Point> points, List<Vector3> normals)
+    public void RenderTriangle(Triangle triangle)
     {
         var lightDir = new Vector3(0, 0, -1);
 
-        var boundingBox = new BoundingBox(points, c_boundingBoxMin, c_boundingBoxMax);
+        var boundingBox = new BoundingBox(triangle.ScreenPositions, c_boundingBoxMin, c_boundingBoxMax);
 
         for (int x = boundingBox.Left; x <= boundingBox.Right; ++x)
         {
             for (int y = boundingBox.Top; y <= boundingBox.Bottom; ++y)
             {
-                Vector3 bc = MyMath.GetBarycentric(points, new Vector2(x, y));
+                Vector3 bc = MyMath.GetBarycentric(triangle.ScreenPositions, new Vector2(x, y));
                 if (bc.X < 0.0f || bc.Y < 0.0f || bc.Z < 0.0f)
                 {
                     continue;
                 }
 
-                Vector3 normal = Vector3.Normalize(bc.X * normals[0] + bc.Y * normals[1] + bc.Z * normals[2]);
+                Vector3 normal = Vector3.Normalize(bc.X * triangle.Normals[0] + bc.Y * triangle.Normals[1] + bc.Z * triangle.Normals[2]);
                 float lightCoefficient = Vector3.Dot(normal, lightDir);
                 if (lightCoefficient < 0.0f)
                 {
                     continue;
                 }
+
+                float currentDepth = bc.X * triangle.Depths[0] + bc.Y * triangle.Depths[1] + bc.Z * triangle.Depths[2];
+                float depthBufferDepth = m_depthBuffer[y][x];
+                if (currentDepth < depthBufferDepth)
+                {
+                    continue;
+                }
+                m_depthBuffer[y][x] = currentDepth;
+
                 byte c = System.Convert.ToByte(255.0f * lightCoefficient);
                 uint rgb = SDL.SDL_MapRGB(c_surface.format, c, c, c);
 

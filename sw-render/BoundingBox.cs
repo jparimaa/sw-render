@@ -1,14 +1,11 @@
-﻿
-using System.Collections.Generic;
-
-class BoundingBox
+﻿class BoundingBox
 {
     public int Left { get; set; }
     public int Top { get; set; }
     public int Right { get; set; }
     public int Bottom { get; set; }
 
-    public BoundingBox(List<Point> points, Point min, Point max)
+    public BoundingBox(Point[] points, Point min, Point max)
     {
         Left = max.X;
         Top = max.Y;

@@ -25,8 +25,7 @@ class Program
         SDL.SDL_Event e;
         bool quit = false;
 
-        var points = new List<List<Point>>();
-        var normals = new List<List<Vector3>>();
+        var triangles = new List<Triangle>();
         {
             var objLoaderFactory = new ObjLoaderFactory();
             var objLoader = objLoaderFactory.Create();
@@ -37,20 +36,16 @@ class Program
             {
                 foreach (Face face in group.Faces)
                 {
-                    var facePoints = new List<Point>();
-                    var faceNormals = new List<Vector3>();
+                    var triangle = new Triangle();
                     for (int i = 0; i < face.Count; ++i)
                     {
-
                         ObjLoader.Loader.Data.VertexData.Vertex v = model.Vertices[face[i].VertexIndex - 1];
-                        var p = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
-                        facePoints.Add(p);
-
+                        triangle.ScreenPositions[i] = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
+                        triangle.Depths[i] = v.Z;
                         ObjLoader.Loader.Data.VertexData.Normal n = model.Normals[face[i].NormalIndex - 1];
-                        faceNormals.Add(new Vector3(n.X, n.Y, n.Z));
+                        triangle.Normals[i] = new Vector3(n.X, n.Y, -n.Z);
                     }
-                    points.Add(facePoints);
-                    normals.Add(faceNormals);
+                    triangles.Add(triangle);
                 }
             }
         }
@@ -77,9 +72,9 @@ class Program
             renderer.RenderNoise();
             //renderer.RenderTriangle(triangle1);
             //renderer.RenderTriangle(triangle2);
-            for (int i = 0; i < points.Count; ++i)
+            for (int i = 0; i < triangles.Count; ++i)
             {
-                renderer.RenderTriangle(points[i], normals[i]);
+                renderer.RenderTriangle(triangles[i]);
             }
 
             renderer.Finish();
