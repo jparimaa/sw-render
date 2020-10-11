@@ -29,7 +29,7 @@ class Renderer
 
     public void Clear()
     {
-        SDL.SDL_Rect rect = new SDL.SDL_Rect() { x = 0, y = 0, w = c_width, h = c_height };
+        var rect = new SDL.SDL_Rect() { x = 0, y = 0, w = c_width, h = c_height };
         SDL.SDL_FillRect(c_surfacePtr, ref rect, SDL.SDL_MapRGB(c_surface.format, 0, 0, 64));
     }
 
@@ -51,10 +51,11 @@ class Renderer
         }
     }
 
-    public void RenderTriangle(List<Point> points)
+    public void RenderTriangle(List<Point> points, List<Vector3> normals)
     {
-        BoundingBox boundingBox = new BoundingBox(points, c_boundingBoxMin, c_boundingBoxMax);
-        uint rgb = SDL.SDL_MapRGB(c_surface.format, 255, 255, 0);
+        var lightDir = new Vector3(0, 0, -1);
+
+        var boundingBox = new BoundingBox(points, c_boundingBoxMin, c_boundingBoxMax);
 
         for (int x = boundingBox.Left; x <= boundingBox.Right; ++x)
         {
@@ -65,6 +66,15 @@ class Renderer
                 {
                     continue;
                 }
+
+                Vector3 normal = Vector3.Normalize(bc.X * normals[0] + bc.Y * normals[1] + bc.Z * normals[2]);
+                float lightCoefficient = Vector3.Dot(normal, lightDir);
+                if (lightCoefficient < 0.0f)
+                {
+                    continue;
+                }
+                byte c = System.Convert.ToByte(255.0f * lightCoefficient);
+                uint rgb = SDL.SDL_MapRGB(c_surface.format, c, c, c);
 
                 SetPixel(x, y, rgb);
             }

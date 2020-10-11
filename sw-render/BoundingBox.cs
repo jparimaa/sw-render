@@ -27,5 +27,4 @@ class BoundingBox
         Right = System.Math.Min(Right, max.X);
         Bottom = System.Math.Min(Bottom, max.Y);
     }
-
 }

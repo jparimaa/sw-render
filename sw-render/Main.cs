@@ -1,8 +1,8 @@
 ﻿using ObjLoader.Loader.Data.Elements;
-using ObjLoader.Loader.Data.VertexData;
 using ObjLoader.Loader.Loaders;
 using SDL2;
 using System.Collections.Generic;
+using System.Numerics;
 
 class Program
 {
@@ -20,26 +20,13 @@ class Program
             return;
         }
 
-        Renderer renderer = new Renderer(window, width, height);
+        var renderer = new Renderer(window, width, height);
 
         SDL.SDL_Event e;
         bool quit = false;
 
-        List<Point> triangle1 = new List<Point>()
-        {
-            new Point(0,0),
-            new Point(100,100),
-            new Point(0,100),
-        };
-
-        List<Point> triangle2 = new List<Point>()
-        {
-            new Point(300,300),
-            new Point(200,200),
-            new Point(200,300),
-        };
-
-        List<List<Point>> points = new List<List<Point>>();
+        var points = new List<List<Point>>();
+        var normals = new List<List<Vector3>>();
         {
             var objLoaderFactory = new ObjLoaderFactory();
             var objLoader = objLoaderFactory.Create();
@@ -50,14 +37,20 @@ class Program
             {
                 foreach (Face face in group.Faces)
                 {
-                    List<Point> facePoints = new List<Point>();
+                    var facePoints = new List<Point>();
+                    var faceNormals = new List<Vector3>();
                     for (int i = 0; i < face.Count; ++i)
                     {
-                        Vertex v = model.Vertices[face[i].VertexIndex - 1];
-                        Point p = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
+
+                        ObjLoader.Loader.Data.VertexData.Vertex v = model.Vertices[face[i].VertexIndex - 1];
+                        var p = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
                         facePoints.Add(p);
+
+                        ObjLoader.Loader.Data.VertexData.Normal n = model.Normals[face[i].NormalIndex - 1];
+                        faceNormals.Add(new Vector3(n.X, n.Y, n.Z));
                     }
                     points.Add(facePoints);
+                    normals.Add(faceNormals);
                 }
             }
         }
@@ -84,9 +77,9 @@ class Program
             renderer.RenderNoise();
             //renderer.RenderTriangle(triangle1);
             //renderer.RenderTriangle(triangle2);
-            foreach (var facePoints in points)
+            for (int i = 0; i < points.Count; ++i)
             {
-                renderer.RenderTriangle(facePoints);
+                renderer.RenderTriangle(points[i], normals[i]);
             }
 
             renderer.Finish();
