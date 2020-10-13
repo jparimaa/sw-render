@@ -8,7 +8,8 @@ class Program
 {
     static void Main(string[] args)
     {
-        SDL.SDL_Init(SDL.SDL_INIT_VIDEO);
+        SDL.SDL_Init(0);
+        //SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "0");
         int width = 800;
         int height = 600;
         System.IntPtr window = SDL.SDL_CreateWindow("mycs", 50, 50, width, height, 0);
@@ -19,6 +20,9 @@ class Program
             System.Console.WriteLine("ERROR: Pixel format not supported at the moment.");
             return;
         }
+
+        System.IntPtr sdlRenderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
+
 
         var renderer = new Renderer(window, width, height);
 
@@ -69,7 +73,7 @@ class Program
             }
 
             renderer.Clear();
-            renderer.RenderNoise();
+            //renderer.RenderNoise();
             //renderer.RenderTriangle(triangle1);
             //renderer.RenderTriangle(triangle2);
             for (int i = 0; i < triangles.Count; ++i)
@@ -78,8 +82,18 @@ class Program
             }
 
             renderer.Finish();
+
+            /*
+            SDL.SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 0);
+            SDL.SDL_RenderClear(sdlRenderer);
+            SDL.SDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 255);
+            SDL.SDL_RenderDrawPoint(sdlRenderer, 50, 50);
+            SDL.SDL_RenderPresent(sdlRenderer);
+            SDL.SDL_Delay(500);
+            */
         }
 
+        SDL.SDL_DestroyRenderer(sdlRenderer);
         SDL.SDL_DestroyWindow(window);
         SDL.SDL_Quit();
     }
