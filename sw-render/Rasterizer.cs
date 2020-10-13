@@ -2,29 +2,21 @@
 using System.Collections.Generic;
 using System.Numerics;
 
-class Renderer
+class Rasterizer
 {
-    private readonly System.IntPtr c_window;
+    private readonly System.IntPtr c_renderer;
     private readonly int c_width;
     private readonly int c_height;
-    private readonly System.IntPtr c_surfacePtr;
-    private readonly SDL.SDL_Surface c_surface;
-    private readonly uint c_windowPixelFormat;
-    private readonly byte c_bytesPerPixel;
     private readonly Point c_boundingBoxMin;
     private readonly Point c_boundingBoxMax;
 
     private List<List<float>> m_depthBuffer;
 
-    public Renderer(System.IntPtr window, int width, int height)
+    public Rasterizer(System.IntPtr renderer, int width, int height)
     {
-        c_window = window;
+        c_renderer = renderer;
         c_width = width;
         c_height = height;
-        c_surfacePtr = SDL.SDL_GetWindowSurface(c_window);
-        c_surface = System.Runtime.InteropServices.Marshal.PtrToStructure<SDL.SDL_Surface>(c_surfacePtr);
-        c_windowPixelFormat = SDL.SDL_GetWindowPixelFormat(c_window);
-        c_bytesPerPixel = SDL.SDL_BYTESPERPIXEL(c_windowPixelFormat);
         c_boundingBoxMin = new Point(0, 0);
         c_boundingBoxMax = new Point(c_width - 1, c_height - 1);
 
@@ -41,13 +33,7 @@ class Renderer
         }
     }
 
-    public void Clear()
-    {
-        var rect = new SDL.SDL_Rect() { x = 0, y = 0, w = c_width, h = c_height };
-        SDL.SDL_FillRect(c_surfacePtr, ref rect, SDL.SDL_MapRGB(c_surface.format, 0, 0, 64));
-    }
-
-    public void RenderNoise(int amount = 10000)
+    public void RasterizeNoise(int amount = 10000)
     {
         var random = new System.Random();
 
@@ -59,13 +45,11 @@ class Renderer
             var color = new byte[3];
             random.NextBytes(color);
 
-            uint rgb = SDL.SDL_MapRGB(c_surface.format, color[0], color[1], color[2]);
-
-            SetPixel(x, y, rgb);
+            SetPixel(x, y, color[0], color[1], color[2]);
         }
     }
 
-    public void RenderTriangle(Triangle triangle)
+    public void RasterizeTriangle(Triangle triangle)
     {
         var lightDir = new Vector3(0, 0, -1);
 
@@ -97,21 +81,15 @@ class Renderer
                 m_depthBuffer[y][x] = currentDepth;
 
                 byte c = System.Convert.ToByte(255.0f * lightCoefficient);
-                uint rgb = SDL.SDL_MapRGB(c_surface.format, c, c, c);
 
-                SetPixel(x, y, rgb);
+                SetPixel(x, y, c, c, c);
             }
         }
     }
 
-    public void Finish()
+    private void SetPixel(int x, int y, byte r, byte g, byte b)
     {
-        SDL.SDL_UpdateWindowSurface(c_window);
-    }
-
-    private void SetPixel(int x, int y, uint color)
-    {
-        int offset = y * c_surface.pitch + x * c_bytesPerPixel;
-        System.Runtime.InteropServices.Marshal.WriteIntPtr(c_surface.pixels, offset, new System.IntPtr(color));
+        SDL.SDL_SetRenderDrawColor(c_renderer, r, g, b, 255);
+        SDL.SDL_RenderDrawPoint(c_renderer, x, y);
     }
 }
