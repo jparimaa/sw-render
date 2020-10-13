@@ -6,49 +6,51 @@ using System.Numerics;
 
 class Program
 {
+    static List<Triangle> GenerateTriangles(int width, int height)
+    {
+        var triangles = new List<Triangle>();
+        var objLoaderFactory = new ObjLoaderFactory();
+        var objLoader = objLoaderFactory.Create();
+        var fileStream = new System.IO.FileStream("../../../head.obj", System.IO.FileMode.Open);
+        LoadResult model = objLoader.Load(fileStream);
+
+        foreach (Group group in model.Groups)
+        {
+            foreach (Face face in group.Faces)
+            {
+                var triangle = new Triangle();
+                for (int i = 0; i < face.Count; ++i)
+                {
+                    ObjLoader.Loader.Data.VertexData.Vertex v = model.Vertices[face[i].VertexIndex - 1];
+                    triangle.ScreenPositions[i] = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
+                    triangle.Depths[i] = v.Z;
+                    ObjLoader.Loader.Data.VertexData.Normal n = model.Normals[face[i].NormalIndex - 1];
+                    triangle.Normals[i] = new Vector3(n.X, n.Y, -n.Z);
+                }
+                triangles.Add(triangle);
+            }
+        }
+        return triangles;
+    }
+
     static void Main(string[] args)
     {
-        SDL.SDL_Init(SDL.SDL_INIT_VIDEO);
+        SDL.SDL_Init(0);
         int width = 800;
         int height = 600;
         System.IntPtr window = SDL.SDL_CreateWindow("mycs", 50, 50, width, height, 0);
+        SDL.SDL_SetWindowTitle(window, "FPS:");
+        System.IntPtr renderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
 
-        uint windowPixelFormat = SDL.SDL_GetWindowPixelFormat(window);
-        if (SDL.SDL_BYTESPERPIXEL(windowPixelFormat) != 4)
-        {
-            System.Console.WriteLine("ERROR: Pixel format not supported at the moment.");
-            return;
-        }
-
-        var renderer = new Renderer(window, width, height);
+        var rasterizer = new Rasterizer(renderer, width, height);
+        List<Triangle> triangles = GenerateTriangles(width, height);
 
         SDL.SDL_Event e;
         bool quit = false;
 
-        var triangles = new List<Triangle>();
-        {
-            var objLoaderFactory = new ObjLoaderFactory();
-            var objLoader = objLoaderFactory.Create();
-            var fileStream = new System.IO.FileStream("../../../head.obj", System.IO.FileMode.Open);
-            LoadResult model = objLoader.Load(fileStream);
-
-            foreach (Group group in model.Groups)
-            {
-                foreach (Face face in group.Faces)
-                {
-                    var triangle = new Triangle();
-                    for (int i = 0; i < face.Count; ++i)
-                    {
-                        ObjLoader.Loader.Data.VertexData.Vertex v = model.Vertices[face[i].VertexIndex - 1];
-                        triangle.ScreenPositions[i] = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
-                        triangle.Depths[i] = v.Z;
-                        ObjLoader.Loader.Data.VertexData.Normal n = model.Normals[face[i].NormalIndex - 1];
-                        triangle.Normals[i] = new Vector3(n.X, n.Y, -n.Z);
-                    }
-                    triangles.Add(triangle);
-                }
-            }
-        }
+        int frameCounter = 0;
+        var stopwatch = new System.Diagnostics.Stopwatch();
+        stopwatch.Start();
 
         while (!quit)
         {
@@ -68,18 +70,26 @@ class Program
                 }
             }
 
-            renderer.Clear();
-            renderer.RenderNoise();
-            //renderer.RenderTriangle(triangle1);
-            //renderer.RenderTriangle(triangle2);
+            SDL.SDL_SetRenderDrawColor(renderer, 0, 0, 32, 255);
+            SDL.SDL_RenderClear(renderer);
             for (int i = 0; i < triangles.Count; ++i)
             {
-                renderer.RenderTriangle(triangles[i]);
+                rasterizer.RasterizeTriangle(triangles[i]);
             }
+            SDL.SDL_RenderPresent(renderer);
 
-            renderer.Finish();
+            ++frameCounter;
+            long elapsedMs = stopwatch.ElapsedMilliseconds;
+            if (elapsedMs > 1000)
+            {
+                float FPS = frameCounter / (elapsedMs / 1000.0f);
+                SDL.SDL_SetWindowTitle(window, "FPS:" + FPS.ToString());
+                frameCounter = 0;
+                stopwatch.Restart();
+            }
         }
 
+        SDL.SDL_DestroyRenderer(renderer);
         SDL.SDL_DestroyWindow(window);
         SDL.SDL_Quit();
     }

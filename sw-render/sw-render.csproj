@@ -108,7 +108,7 @@
     <Compile Include="MyMath.cs" />
     <Compile Include="Point.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Renderer.cs" />
+    <Compile Include="Rasterizer.cs" />
     <Compile Include="Triangle.cs" />
     <Compile Include="SDL2.cs" />
   </ItemGroup>
