@@ -1,11 +1,9 @@
-﻿using ObjLoader.Loader.Data.Elements;
-using ObjLoader.Loader.Loaders;
-using SDL2;
-using System.Collections.Generic;
+﻿using SDL2;
 using System.Numerics;
 
 class Program
 {
+    /*
     static List<Triangle> GenerateTriangles(int width, int height)
     {
         var triangles = new List<Triangle>();
@@ -32,7 +30,7 @@ class Program
         }
         return triangles;
     }
-
+    */
     static void Main(string[] args)
     {
         SDL.SDL_Init(0);
@@ -42,8 +40,16 @@ class Program
         SDL.SDL_SetWindowTitle(window, "FPS:");
         System.IntPtr renderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
 
-        var rasterizer = new Rasterizer(renderer, width, height);
-        List<Triangle> triangles = GenerateTriangles(width, height);
+        var renderPipeline = new RenderPipeline(renderer, width, height);
+        //List<Triangle> triangles = GenerateTriangles(width, height);
+        var triangle = new Triangle();
+        triangle.Positions[0] = new Vector3(0.1f, 0.1f, 0.0f);
+        triangle.Positions[1] = new Vector3(1.0f, 0.1f, 0.0f);
+        triangle.Positions[2] = new Vector3(1.0f, 1.0f, 0.0f);
+        triangle.Normals[0] = new Vector3(0.0f, 0.0f, -1.0f);
+        triangle.Normals[1] = new Vector3(0.0f, 0.0f, -1.0f);
+        triangle.Normals[2] = new Vector3(0.0f, 0.0f, -1.0f);
+
 
         SDL.SDL_Event e;
         bool quit = false;
@@ -72,10 +78,11 @@ class Program
 
             SDL.SDL_SetRenderDrawColor(renderer, 0, 0, 32, 255);
             SDL.SDL_RenderClear(renderer);
-            for (int i = 0; i < triangles.Count; ++i)
-            {
-                rasterizer.RasterizeTriangle(triangles[i]);
-            }
+            renderPipeline.DrawTriangle(triangle);
+            //for (int i = 0; i < triangles.Count; ++i)
+            //{
+            //    rasterizer.DrawTriangle(triangles[i]);
+            //}
             SDL.SDL_RenderPresent(renderer);
 
             ++frameCounter;

@@ -2,14 +2,14 @@
 
 class Triangle
 {
-    public float[] Depths { get; set; }
-    public Point[] ScreenPositions { get; set; }
+    public Vector3[] Positions { get; set; }
     public Vector3[] Normals { get; set; }
+    public Vector2[] UVs { get; set; }
 
     public Triangle()
     {
-        Depths = new float[3];
-        ScreenPositions = new Point[3];
+        Positions = new Vector3[3];
         Normals = new Vector3[3];
+        UVs = new Vector2[3];
     }
 }
