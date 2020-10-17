@@ -104,6 +104,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BoundingBox.cs" />
+    <Compile Include="Camera.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="MyMath.cs" />
     <Compile Include="Point.cs" />

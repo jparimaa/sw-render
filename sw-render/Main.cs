@@ -50,13 +50,16 @@ class Program
         triangle.Normals[1] = new Vector3(0.0f, 0.0f, -1.0f);
         triangle.Normals[2] = new Vector3(0.0f, 0.0f, -1.0f);
 
-
         SDL.SDL_Event e;
         bool quit = false;
 
         int frameCounter = 0;
         var stopwatch = new System.Diagnostics.Stopwatch();
         stopwatch.Start();
+
+        var camera = new Camera();
+        var matrices = new RenderPipeline.Matrices();
+        matrices.ProjectionMatrix = camera.GetProjectionMatrix();
 
         while (!quit)
         {
@@ -72,17 +75,25 @@ class Program
                         {
                             quit = true;
                         }
+                        if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_w)
+                        {
+                            camera.Position += camera.GetForward() * 0.1f;
+                        }
+                        if (e.key.keysym.sym == SDL.SDL_Keycode.SDLK_s)
+                        {
+                            camera.Position -= camera.GetForward() * 0.1f;
+                        }
                         break;
                 }
             }
 
             SDL.SDL_SetRenderDrawColor(renderer, 0, 0, 32, 255);
             SDL.SDL_RenderClear(renderer);
-            renderPipeline.DrawTriangle(triangle);
-            //for (int i = 0; i < triangles.Count; ++i)
-            //{
-            //    rasterizer.DrawTriangle(triangles[i]);
-            //}
+
+            matrices.ViewMatrix = camera.GetViewMatrix();
+            renderPipeline.ClearDepth();
+            renderPipeline.DrawTriangle(triangle, matrices);
+
             SDL.SDL_RenderPresent(renderer);
 
             ++frameCounter;

@@ -4,19 +4,29 @@ using System.Numerics;
 
 class RenderPipeline
 {
+    public class Matrices
+    {
+        public Matrix4x4 WorldMatrix { get; set; }
+        public Matrix4x4 ViewMatrix { get; set; }
+        public Matrix4x4 ProjectionMatrix { get; set; }
+
+        public Matrices()
+        {
+            WorldMatrix = Matrix4x4.Identity;
+            ViewMatrix = Matrix4x4.Identity;
+            ProjectionMatrix = Matrix4x4.Identity;
+        }
+    }
+
     private readonly System.IntPtr c_renderer;
     private readonly int c_width;
     private readonly int c_height;
     private readonly Point c_boundingBoxMin;
     private readonly Point c_boundingBoxMax;
 
-    private readonly Matrix4x4 c_worldMatrix;
-    private readonly Matrix4x4 c_viewMatrix;
-    private readonly Matrix4x4 c_projectionMatrix;
-
     private List<List<float>> m_depthBuffer;
 
-    class VertexOut
+    private class VertexOut
     {
         public Vector4[] Positions { get; set; }
         public Vector3[] Normals { get; set; }
@@ -30,7 +40,7 @@ class RenderPipeline
         }
     }
 
-    class RasterOut
+    private class RasterOut
     {
         public Point[] ScreenPositions { get; set; }
         public Vector3[] Normals { get; set; }
@@ -54,10 +64,6 @@ class RenderPipeline
         c_boundingBoxMin = new Point(0, 0);
         c_boundingBoxMax = new Point(c_width - 1, c_height - 1);
 
-        c_worldMatrix = Matrix4x4.Identity;
-        c_viewMatrix = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 10.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
-        c_projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(0.785398f, width / height, 0.1f, 1000.0f);
-
         var defaults = new float[width];
         for (int i = 0; i < defaults.Length; ++i)
         {
@@ -68,6 +74,17 @@ class RenderPipeline
         for (int i = 0; i < height; ++i)
         {
             m_depthBuffer.Add(new List<float>(defaults));
+        }
+    }
+
+    public void ClearDepth()
+    {
+        for (int i = 0; i < m_depthBuffer.Count; ++i)
+        {
+            for (int j = 0; j < m_depthBuffer[i].Count; ++j)
+            {
+                m_depthBuffer[i][j] = -1.0f;
+            }
         }
     }
 
@@ -87,24 +104,24 @@ class RenderPipeline
         }
     }
 
-    public void DrawTriangle(Triangle triangle)
+    public void DrawTriangle(Triangle triangle, Matrices matrices)
     {
-        VertexOut vertexOut = VertexShader(triangle);
+        VertexOut vertexOut = VertexShader(triangle, matrices);
         RasterOut rasterOut = Rasterizer(vertexOut);
         PixelShader(rasterOut);
     }
 
-    private VertexOut VertexShader(Triangle triangle)
+    private VertexOut VertexShader(Triangle triangle, Matrices matrices)
     {
         var vertexOut = new VertexOut();
-        Matrix4x4 wvp = c_worldMatrix * c_viewMatrix * c_projectionMatrix;
+        Matrix4x4 wvp = matrices.WorldMatrix * matrices.ViewMatrix * matrices.ProjectionMatrix;
         for (int i = 0; i < 3; ++i)
         {
             var pos = new Vector4(triangle.Positions[i].X, triangle.Positions[i].Y, triangle.Positions[i].Z, 1.0f);
             vertexOut.Positions[i] = Vector4.Transform(pos, wvp);
 
             var n = new Vector4(triangle.Normals[i].X, triangle.Normals[i].Y, triangle.Normals[i].Z, 0.0f);
-            n = Vector4.Transform(n, c_worldMatrix);
+            n = Vector4.Transform(n, matrices.WorldMatrix);
 
             vertexOut.Normals[i] = new Vector3(n.X, n.Y, n.Z);
 
