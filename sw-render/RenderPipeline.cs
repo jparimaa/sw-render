@@ -104,11 +104,14 @@ class RenderPipeline
         }
     }
 
-    public void DrawTriangle(Triangle triangle, Matrices matrices)
+    public void DrawTriangles(List<Triangle> triangles, Matrices matrices)
     {
-        VertexOut vertexOut = VertexShader(triangle, matrices);
-        RasterOut rasterOut = Rasterizer(vertexOut);
-        PixelShader(rasterOut);
+        foreach (Triangle triangle in triangles)
+        {
+            VertexOut vertexOut = VertexShader(triangle, matrices);
+            RasterOut rasterOut = Rasterizer(vertexOut);
+            PixelShader(rasterOut);
+        }
     }
 
     private VertexOut VertexShader(Triangle triangle, Matrices matrices)
@@ -132,11 +135,13 @@ class RenderPipeline
 
     private RasterOut Rasterizer(VertexOut vertexOut)
     {
+        int halfWidth = c_width / 2;
+        int halfHeight = c_height / 2;
         var rasterOut = new RasterOut();
         for (int i = 0; i < 3; ++i)
         {
             Vector3 p = new Vector3(vertexOut.Positions[i].X, vertexOut.Positions[i].Y, vertexOut.Positions[i].Z) / vertexOut.Positions[i].W;
-            rasterOut.ScreenPositions[i] = new Point(p.X * c_width, p.Y * c_height);
+            rasterOut.ScreenPositions[i] = new Point(halfWidth + p.X * halfWidth, c_height - (halfHeight + p.Y * halfHeight));
             rasterOut.Depths[i] = p.Z;
             rasterOut.Normals[i] = vertexOut.Normals[i];
             rasterOut.UVs[i] = vertexOut.UVs[i];

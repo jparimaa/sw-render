@@ -1,4 +1,7 @@
-﻿using SDL2;
+﻿using ObjLoader.Loader.Data.Elements;
+using ObjLoader.Loader.Loaders;
+using SDL2;
+using System.Collections.Generic;
 using System.Numerics;
 
 class Program
@@ -16,14 +19,31 @@ class Program
         System.IntPtr renderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
 
         var renderPipeline = new RenderPipeline(renderer, width, height);
-        //List<Triangle> triangles = GenerateTriangles(width, height);
-        var triangle = new Triangle();
-        triangle.Positions[0] = new Vector3(0.1f, 0.1f, 0.0f);
-        triangle.Positions[1] = new Vector3(1.0f, 0.1f, 0.0f);
-        triangle.Positions[2] = new Vector3(1.0f, 1.0f, 0.0f);
-        triangle.Normals[0] = new Vector3(0.0f, 0.0f, -1.0f);
-        triangle.Normals[1] = new Vector3(0.0f, 0.0f, -1.0f);
-        triangle.Normals[2] = new Vector3(0.0f, 0.0f, -1.0f);
+        List<Triangle> triangles = GenerateTriangles();
+
+        /*
+        List<Triangle> triangles = new List<Triangle>();
+        {
+            var triangle = new Triangle();
+            triangle.Positions[0] = new Vector3(-0.5f, -0.5f, 0.0f);
+            triangle.Positions[1] = new Vector3(-0.5f, 1.8f, 0.0f);
+            triangle.Positions[2] = new Vector3(0.5f, 0.0f, 0.0f);
+            triangle.Normals[0] = new Vector3(0.0f, 0.0f, -1.0f);
+            triangle.Normals[1] = new Vector3(0.0f, 0.0f, -1.0f);
+            triangle.Normals[2] = new Vector3(0.0f, 0.0f, -1.0f);
+            triangles.Add(triangle);
+        }
+        {
+            var triangle = new Triangle();
+            triangle.Positions[0] = new Vector3(0.1f, 0.1f, 0.0f);
+            triangle.Positions[1] = new Vector3(1.0f, 0.1f, 0.0f);
+            triangle.Positions[2] = new Vector3(1.0f, 1.0f, 0.0f);
+            triangle.Normals[0] = new Vector3(0.0f, 0.0f, -1.0f);
+            triangle.Normals[1] = new Vector3(0.0f, 0.0f, -1.0f);
+            triangle.Normals[2] = new Vector3(0.0f, 0.0f, -1.0f);
+            triangles.Add(triangle);
+        }
+        */
 
         SDL.SDL_Event e;
         bool quit = false;
@@ -60,7 +80,7 @@ class Program
 
             matrices.ViewMatrix = camera.GetViewMatrix();
             renderPipeline.ClearDepth();
-            renderPipeline.DrawTriangle(triangle, matrices);
+            renderPipeline.DrawTriangles(triangles, matrices);
 
             SDL.SDL_RenderPresent(renderer);
 
@@ -80,34 +100,33 @@ class Program
         SDL.SDL_Quit();
     }
 
-    /*
-static List<Triangle> GenerateTriangles(int width, int height)
-{
-    var triangles = new List<Triangle>();
-    var objLoaderFactory = new ObjLoaderFactory();
-    var objLoader = objLoaderFactory.Create();
-    var fileStream = new System.IO.FileStream("../../../head.obj", System.IO.FileMode.Open);
-    LoadResult model = objLoader.Load(fileStream);
-
-    foreach (Group group in model.Groups)
+    private static List<Triangle> GenerateTriangles()
     {
-        foreach (Face face in group.Faces)
+        var objLoaderFactory = new ObjLoaderFactory();
+        var objLoader = objLoaderFactory.Create();
+        var fileStream = new System.IO.FileStream("../../../head.obj", System.IO.FileMode.Open);
+        LoadResult model = objLoader.Load(fileStream);
+
+        var triangles = new List<Triangle>();
+        foreach (Group group in model.Groups)
         {
-            var triangle = new Triangle();
-            for (int i = 0; i < face.Count; ++i)
+            foreach (Face face in group.Faces)
             {
-                ObjLoader.Loader.Data.VertexData.Vertex v = model.Vertices[face[i].VertexIndex - 1];
-                triangle.ScreenPositions[i] = new Point((v.X + 1.0f) * width / 2, height - ((v.Y + 1.0f) * height / 2));
-                triangle.Depths[i] = v.Z;
-                ObjLoader.Loader.Data.VertexData.Normal n = model.Normals[face[i].NormalIndex - 1];
-                triangle.Normals[i] = new Vector3(n.X, n.Y, -n.Z);
+                var triangle = new Triangle();
+                for (int i = 0; i < face.Count; ++i)
+                {
+                    ObjLoader.Loader.Data.VertexData.Vertex v = model.Vertices[face[i].VertexIndex - 1];
+                    triangle.Positions[i] = new Vector3(v.X, v.Y, v.Z);
+                    ObjLoader.Loader.Data.VertexData.Normal n = model.Normals[face[i].NormalIndex - 1];
+                    triangle.Normals[i] = new Vector3(n.X, n.Y, -n.Z);
+                    ObjLoader.Loader.Data.VertexData.Texture t = model.Textures[face[i].NormalIndex - 1];
+                    triangle.UVs[i] = new Vector2(t.X, t.Y);
+                }
+                triangles.Add(triangle);
             }
-            triangles.Add(triangle);
         }
+        return triangles;
     }
-    return triangles;
-}
-*/
 
     private static void MoveCamera(SDL.SDL_Event e, Camera camera)
     {
@@ -135,7 +154,7 @@ static List<Triangle> GenerateTriangles(int width, int height)
                     camera.position = new Vector3(0, 0, 10);
                     camera.rotation = new Vector3(0);
                 }
-                System.Console.WriteLine("position: " + camera.position.ToString());
+                //System.Console.WriteLine("position: " + camera.position.ToString());
                 break;
             case SDL.SDL_EventType.SDL_MOUSEMOTION:
                 if (s_currentMouseX == -1 || s_currentMouseY == -1)
@@ -149,7 +168,7 @@ static List<Triangle> GenerateTriangles(int width, int height)
                 camera.rotation.X += rotateX;
                 s_currentMouseX = e.motion.x;
                 s_currentMouseY = e.motion.y;
-                System.Console.WriteLine("rotation: " + camera.rotation.ToString());
+                //System.Console.WriteLine("rotation: " + camera.rotation.ToString());
                 break;
         }
     }
