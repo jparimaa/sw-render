@@ -21,30 +21,6 @@ class Program
         var renderPipeline = new RenderPipeline(renderer, width, height);
         List<Triangle> triangles = GenerateTriangles();
 
-        /*
-        List<Triangle> triangles = new List<Triangle>();
-        {
-            var triangle = new Triangle();
-            triangle.Positions[0] = new Vector3(-0.5f, -0.5f, 0.0f);
-            triangle.Positions[1] = new Vector3(-0.5f, 1.8f, 0.0f);
-            triangle.Positions[2] = new Vector3(0.5f, 0.0f, 0.0f);
-            triangle.Normals[0] = new Vector3(0.0f, 0.0f, -1.0f);
-            triangle.Normals[1] = new Vector3(0.0f, 0.0f, -1.0f);
-            triangle.Normals[2] = new Vector3(0.0f, 0.0f, -1.0f);
-            triangles.Add(triangle);
-        }
-        {
-            var triangle = new Triangle();
-            triangle.Positions[0] = new Vector3(0.1f, 0.1f, 0.0f);
-            triangle.Positions[1] = new Vector3(1.0f, 0.1f, 0.0f);
-            triangle.Positions[2] = new Vector3(1.0f, 1.0f, 0.0f);
-            triangle.Normals[0] = new Vector3(0.0f, 0.0f, -1.0f);
-            triangle.Normals[1] = new Vector3(0.0f, 0.0f, -1.0f);
-            triangle.Normals[2] = new Vector3(0.0f, 0.0f, -1.0f);
-            triangles.Add(triangle);
-        }
-        */
-
         SDL.SDL_Event e;
         bool quit = false;
 

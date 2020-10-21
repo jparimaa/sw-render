@@ -67,7 +67,7 @@ class RenderPipeline
         var defaults = new float[width];
         for (int i = 0; i < defaults.Length; ++i)
         {
-            defaults[i] = -1.0f;
+            defaults[i] = 1.0f;
         }
 
         m_depthBuffer = new List<List<float>>(height);
@@ -83,7 +83,7 @@ class RenderPipeline
         {
             for (int j = 0; j < m_depthBuffer[i].Count; ++j)
             {
-                m_depthBuffer[i][j] = -1.0f;
+                m_depthBuffer[i][j] = 1.0f;
             }
         }
     }
@@ -176,7 +176,7 @@ class RenderPipeline
 
                 float currentDepth = bc.X * rasterOut.Depths[0] + bc.Y * rasterOut.Depths[1] + bc.Z * rasterOut.Depths[2];
                 float depthBufferDepth = m_depthBuffer[y][x];
-                if (currentDepth < depthBufferDepth)
+                if (currentDepth >= depthBufferDepth)
                 {
                     continue;
                 }
