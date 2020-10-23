@@ -11,7 +11,7 @@ class Camera
 
     public Camera()
     {
-        position = new Vector3(0, 0, 10.0f);
+        position = new Vector3(0, 0, 3.0f);
         rotation = new Vector3(0, 0, 0);
         AspectRatio = 800 / 600;
         c_forward = new Vector4(0, 0, -1, 0);

@@ -1,6 +1,7 @@
 ﻿using SDL2;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 
 class RenderPipeline
 {
@@ -23,6 +24,8 @@ class RenderPipeline
     private readonly int c_height;
     private readonly Point c_boundingBoxMin;
     private readonly Point c_boundingBoxMax;
+    private readonly object m_depthLock = new object();
+    private readonly object m_pixelLock = new object();
 
     private List<List<float>> m_depthBuffer;
 
@@ -106,9 +109,48 @@ class RenderPipeline
 
     public void DrawTriangles(List<Triangle> triangles, Matrices matrices)
     {
-        foreach (Triangle triangle in triangles)
+        if (triangles.Count == 0)
         {
-            VertexOut vertexOut = VertexShader(triangle, matrices);
+            System.Console.WriteLine("Empty list of triangles");
+            return;
+        }
+        int threadCount = System.Math.Min(4, triangles.Count);
+        int minTrianglesPerThread = (int)System.Math.Floor(triangles.Count / (double)threadCount);
+        int threadsToBeDivided = triangles.Count - (threadCount * minTrianglesPerThread);
+        var triangleCountForThreads = new List<int>();
+        for (int i = 0; i < threadCount; ++i)
+        {
+            triangleCountForThreads.Add(minTrianglesPerThread);
+        }
+        for (int i = 0; i < threadsToBeDivided; ++i)
+        {
+            triangleCountForThreads[i] += 1;
+        }
+        var threadIndices = new List<int>();
+        threadIndices.Add(0);
+        for (int i = 0; i < triangleCountForThreads.Count; ++i)
+        {
+            threadIndices.Add(threadIndices[i] + triangleCountForThreads[i]);
+        }
+
+        var tasks = new List<Task>();
+        for (int i = 1; i < threadIndices.Count; ++i)
+        {
+            int startIndex = i - 1;
+            int endIndex = i;
+            var task = new Task(() => DrawTriangles(triangles, threadIndices[startIndex], threadIndices[endIndex], matrices));
+            task.Start();
+            tasks.Add(task);
+        }
+        Task.WaitAll(tasks.ToArray());
+    }
+
+    private void DrawTriangles(List<Triangle> triangles, int start, int end, Matrices matrices)
+    {
+        for (int i = start; i < end; ++i)
+        {
+
+            VertexOut vertexOut = VertexShader(triangles[i], matrices);
             RasterOut rasterOut = Rasterizer(vertexOut);
             PixelShader(rasterOut);
         }
@@ -166,6 +208,17 @@ class RenderPipeline
                     continue;
                 }
 
+                float currentDepth = bc.X * rasterOut.Depths[0] + bc.Y * rasterOut.Depths[1] + bc.Z * rasterOut.Depths[2];
+                float depthBufferDepth = m_depthBuffer[y][x];
+                if (currentDepth >= depthBufferDepth)
+                {
+                    continue;
+                }
+                lock (m_depthLock)
+                {
+                    m_depthBuffer[y][x] = currentDepth;
+                }
+
                 Vector3 n = bc.X * rasterOut.Normals[0] + bc.Y * rasterOut.Normals[1] + bc.Z * rasterOut.Normals[2];
                 Vector3 normal = Vector3.Normalize(n);
                 float lightCoefficient = Vector3.Dot(normal, lightDir);
@@ -174,17 +227,12 @@ class RenderPipeline
                     continue;
                 }
 
-                float currentDepth = bc.X * rasterOut.Depths[0] + bc.Y * rasterOut.Depths[1] + bc.Z * rasterOut.Depths[2];
-                float depthBufferDepth = m_depthBuffer[y][x];
-                if (currentDepth >= depthBufferDepth)
-                {
-                    continue;
-                }
-                m_depthBuffer[y][x] = currentDepth;
-
                 byte c = System.Convert.ToByte(255.0f * lightCoefficient);
 
-                SetPixel(x, y, c, c, c);
+                lock (m_pixelLock)
+                {
+                    SetPixel(x, y, c, c, c);
+                }
             }
         }
     }
