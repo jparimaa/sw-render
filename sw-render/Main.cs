@@ -14,7 +14,7 @@ class Program
         SDL.SDL_Init(0);
         int width = 800;
         int height = 600;
-        System.IntPtr window = SDL.SDL_CreateWindow("mycs", 50, 50, width, height, 0);
+        System.IntPtr window = SDL.SDL_CreateWindow("My Window", 50, 50, width, height, 0);
         SDL.SDL_SetWindowTitle(window, "FPS:");
         System.IntPtr renderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
 
@@ -31,6 +31,9 @@ class Program
         var camera = new Camera();
         var matrices = new RenderPipeline.Matrices();
         matrices.ProjectionMatrix = camera.GetProjectionMatrix();
+
+        var texture = new System.Drawing.Bitmap("../../../diffuse.png");
+        texture.RotateFlip(System.Drawing.RotateFlipType.Rotate180FlipNone);
 
         while (!quit)
         {
@@ -56,7 +59,7 @@ class Program
 
             matrices.ViewMatrix = camera.GetViewMatrix();
             renderPipeline.ClearDepth();
-            renderPipeline.DrawTriangles(triangles, matrices);
+            renderPipeline.DrawTriangles(triangles, matrices, texture);
 
             SDL.SDL_RenderPresent(renderer);
 
@@ -95,11 +98,55 @@ class Program
                     triangle.Positions[i] = new Vector3(v.X, v.Y, v.Z);
                     ObjLoader.Loader.Data.VertexData.Normal n = model.Normals[face[i].NormalIndex - 1];
                     triangle.Normals[i] = new Vector3(n.X, n.Y, -n.Z);
-                    ObjLoader.Loader.Data.VertexData.Texture t = model.Textures[face[i].NormalIndex - 1];
+                    ObjLoader.Loader.Data.VertexData.Texture t = model.Textures[face[i].TextureIndex - 1];
                     triangle.UVs[i] = new Vector2(t.X, t.Y);
                 }
                 triangles.Add(triangle);
             }
+        }
+        return triangles;
+    }
+
+    private static List<Triangle> GenerateDebugQuad()
+    {
+        var triangles = new List<Triangle>();
+        {
+            var t = new Triangle();
+            t.Positions = new Vector3[] {
+                new Vector3(-0.5f, -0.5f, 0.0f),
+                new Vector3(-0.5f, 0.5f, 0.0f),
+                new Vector3(0.5f, -0.5f, 0.0f)
+            };
+            t.Normals = new Vector3[] {
+                new Vector3(0.0f, 0.0f, -1.0f),
+                new Vector3(0.0f, 0.0f, -1.0f),
+                new Vector3(0.0f, 0.0f, -1.0f)
+            };
+            t.UVs = new Vector2[] {
+                new Vector2(0.0f, 0.0f),
+                new Vector2(0.0f, 1.0f),
+                new Vector2(1.0f, 0.0f)
+            };
+            triangles.Add(t);
+        }
+        {
+            var t = new Triangle();
+            t.Positions = new Vector3[] {
+                new Vector3(0.5f, -0.5f, 0.0f),
+                new Vector3(-0.5f, 0.5f, 0.0f),
+                new Vector3(0.5f, 0.5f, 0.0f)
+            };
+            t.Normals = new Vector3[] {
+                new Vector3(0.0f, 0.0f, -1.0f),
+                new Vector3(0.0f, 0.0f, -1.0f),
+                new Vector3(0.0f, 0.0f, -1.0f)
+            };
+            t.UVs = new Vector2[] {
+                new Vector2(1.0f, 0.0f),
+                new Vector2(0.0f, 1.0f),
+                new Vector2(1.0f, 1.0f)
+            };
+            triangles.Add(t);
         }
         return triangles;
     }

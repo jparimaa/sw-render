@@ -107,14 +107,14 @@ class RenderPipeline
         }
     }
 
-    public void DrawTriangles(List<Triangle> triangles, Matrices matrices)
+    public void DrawTriangles(List<Triangle> triangles, Matrices matrices, System.Drawing.Bitmap texture)
     {
         if (triangles.Count == 0)
         {
             System.Console.WriteLine("Empty list of triangles");
             return;
         }
-        int threadCount = System.Math.Min(4, triangles.Count);
+        int threadCount = System.Math.Min(2, triangles.Count);
         int minTrianglesPerThread = (int)System.Math.Floor(triangles.Count / (double)threadCount);
         int threadsToBeDivided = triangles.Count - (threadCount * minTrianglesPerThread);
         var triangleCountForThreads = new List<int>();
@@ -138,25 +138,25 @@ class RenderPipeline
         {
             int startIndex = i - 1;
             int endIndex = i;
-            var task = new Task(() => DrawTriangles(triangles, threadIndices[startIndex], threadIndices[endIndex], matrices));
+            var task = new Task(() => DrawTriangles(triangles, threadIndices[startIndex], threadIndices[endIndex], matrices, texture));
             task.Start();
             tasks.Add(task);
         }
         Task.WaitAll(tasks.ToArray());
     }
 
-    private void DrawTriangles(List<Triangle> triangles, int start, int end, Matrices matrices)
+    private void DrawTriangles(List<Triangle> triangles, int start, int end, Matrices matrices, System.Drawing.Bitmap texture)
     {
         for (int i = start; i < end; ++i)
         {
 
-            VertexOut vertexOut = VertexShader(triangles[i], matrices);
+            VertexOut vertexOut = VertexProcessing(triangles[i], matrices);
             RasterOut rasterOut = Rasterizer(vertexOut);
-            PixelShader(rasterOut);
+            PixelProcessing(rasterOut, texture);
         }
     }
 
-    private VertexOut VertexShader(Triangle triangle, Matrices matrices)
+    private VertexOut VertexProcessing(Triangle triangle, Matrices matrices)
     {
         var vertexOut = new VertexOut();
         Matrix4x4 wvp = matrices.WorldMatrix * matrices.ViewMatrix * matrices.ProjectionMatrix;
@@ -192,9 +192,9 @@ class RenderPipeline
         return rasterOut;
     }
 
-    private void PixelShader(RasterOut rasterOut)
+    private void PixelProcessing(RasterOut rasterOut, System.Drawing.Bitmap texture)
     {
-        var lightDir = new Vector3(0, 0, -1);
+        var lightDir = new Vector3(-0.5f, -0.3f, -1.0f);
 
         var boundingBox = new BoundingBox(rasterOut.ScreenPositions, c_boundingBoxMin, c_boundingBoxMax);
 
@@ -221,17 +221,19 @@ class RenderPipeline
 
                 Vector3 n = bc.X * rasterOut.Normals[0] + bc.Y * rasterOut.Normals[1] + bc.Z * rasterOut.Normals[2];
                 Vector3 normal = Vector3.Normalize(n);
-                float lightCoefficient = Vector3.Dot(normal, lightDir);
-                if (lightCoefficient < 0.0f)
-                {
-                    continue;
-                }
+                float lightCoefficient = System.Math.Max(Vector3.Dot(normal, lightDir), 0.0f);
 
-                byte c = System.Convert.ToByte(255.0f * lightCoefficient);
-
+                Vector2 uv = bc.X * rasterOut.UVs[0] + bc.Y * rasterOut.UVs[1] + bc.Z * rasterOut.UVs[2];
+                // This lock slows down a lot
                 lock (m_pixelLock)
                 {
-                    SetPixel(x, y, c, c, c);
+                    var sampleCoordinates = new Point(uv.X * (texture.Width - 1), uv.Y * (texture.Height - 1));
+                    System.Drawing.Color texel = texture.GetPixel(sampleCoordinates.X, sampleCoordinates.Y);
+                    byte r = System.Convert.ToByte(lightCoefficient * System.Convert.ToSingle(texel.R));
+                    byte g = System.Convert.ToByte(lightCoefficient * System.Convert.ToSingle(texel.G));
+                    byte b = System.Convert.ToByte(lightCoefficient * System.Convert.ToSingle(texel.B));
+
+                    SetPixel(x, y, r, g, b);
                 }
             }
         }
